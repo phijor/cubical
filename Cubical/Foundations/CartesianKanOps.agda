@@ -3,7 +3,8 @@
 module Cubical.Foundations.CartesianKanOps where
 
 open import Cubical.Foundations.Prelude
-open import Cubical.Foundations.GroupoidLaws
+open import Cubical.Foundations.Equiv.Base using (_≃_ ; isEquiv ; idIsEquiv)
+open import Cubical.Foundations.Function using (idfun)
 open import Cubical.Foundations.Transport
 open import Cubical.Foundations.Erp
 
@@ -55,8 +56,46 @@ private
 
 -- "master coe"
 -- unlike in cartesian cubes, we don't get coei→i = id definitionally
-coei→j : ∀ {ℓ} (A : I → Type ℓ) (i j : I) → A i → A j
+coei→j : ∀ {ℓ : I → Level} (A : (i : I) → Type (ℓ i)) (i j : I) → A i → A j
 coei→j A i j a = transp (λ k → A (erp k i j)) (eqI i j) a
+
+-- coei→j is an equivalence
+isEquivcoei→j : ∀ {ℓ : I → Level} (A : (i : I) → Type (ℓ i)) → ∀ i j → isEquiv (coei→j A i j)
+isEquivcoei→j A i j = u₁ where
+  -- A line of functions, interpolating between:
+  -- (t = i0): the identity function
+  -- (t = i1): coei→j A
+  γ : (t : I) → A (i ∧ t) → A (j ∧ t)
+  γ t = transp (λ k → A (erp k i j ∧ t)) (eqI i j ∨ ~ t)
+
+  -- Sanity check: γ reduces as desired for (t = i0) and (t = i1):
+  _ : ∀ t → Sub (A (i ∧ t) → A (j ∧ t)) (t ∨ ~ t)
+    λ where
+      (t = i0) → idfun (A i0)
+      (t = i1) → coei→j A i j
+  _ = λ t → inS (γ t)
+
+  -- For (t = i0) we have proof that the identity function is an equivalence,
+  u₀ : isEquiv (γ i0)
+  u₀ = idIsEquiv (A i0)
+
+  -- ...and by transporting that evidence along γ, we prove that coei→j is an equivalence, too.
+  u₁ : isEquiv (γ i1)
+  u₁ = transp (λ t → isEquiv (γ t)) i0 u₀
+
+coei→jEquiv : ∀ {ℓ : I → Level} (A : (i : I) → Type (ℓ i)) → (i j : I) → A i ≃ A j
+coei→jEquiv A i j .fst = coei→j A i j
+coei→jEquiv A i j .snd = isEquivcoei→j A i j
+
+module _ {ℓ} {A B : Type ℓ} where
+  -- transport is coei→j where (i = i0) and (j = i1), so we get a proof
+  -- that it's an equivalence for free:
+  _ : (p : A ≡ B) → isEquiv (transport p)
+  _ = λ p → isEquivcoei→j (λ i → p i) i0 i1
+
+  -- Similarly, coei→j (i = i1) (j = j0) reduces to transport⁻:
+  _ : (p : A ≡ B) → coei→j (λ i → p i) i1 i0 ≡ transport⁻ p
+  _ = λ p → refl
 
 -- "squeeze"
 -- this is just defined as the face of the master coe
