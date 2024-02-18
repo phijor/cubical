@@ -324,3 +324,19 @@ isEquiv≃isEquiv' f = isoToEquiv (isEquiv-isEquiv'-Iso f)
 
 -- The fact that funExt is an equivalence can be found in Cubical.Functions.FunExtEquiv
 
+
+-- A function over a line is an equivalence if
+-- it is an equivalence at both endpoints.
+lineEquiv : ∀ {ℓ : Level} {A B : I → Type ℓ} (f : (i : I) → A i → B i)
+  → isEquiv (f i0)
+  → isEquiv (f i1)
+  → ∀ (φ : I) → A φ ≃ B φ
+lineEquiv f is-equiv₀ is-equiv₁ φ = λ where
+  .fst → f φ
+  .snd → isProp→PathP (λ i → isPropIsEquiv (f i)) is-equiv₀ is-equiv₁ φ
+
+secEquiv : (e : A ≃ B) → ∀ (φ : I) → B ≃ B
+secEquiv {B = B} e = lineEquiv (λ φ b → secEq e b φ) (equivIsEquiv (invEquiv e ∙ₑ e)) (idIsEquiv B)
+
+retEquiv : (e : A ≃ B) → ∀ (φ : I) → A ≃ A
+retEquiv {A = A} e = lineEquiv (λ φ a → retEq e a φ) (equivIsEquiv (e ∙ₑ invEquiv e)) (idIsEquiv A)
