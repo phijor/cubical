@@ -32,10 +32,14 @@ private
   variable
     ℓ ℓ' : Level
 
+ua-system : {A B : Type ℓ} (e : A ≃ B) → ∀ i → Partial (i ∨ ~ i) (Σ[ T ∈ Type ℓ ] T ≃ B)
+ua-system {A = A} {B = B} e i = λ where
+  (i = i0) → A , e
+  (i = i1) → B , idEquiv B
+
 -- The ua constant
 ua : ∀ {A B : Type ℓ} → A ≃ B → A ≡ B
-ua {A = A} {B = B} e i = Glue B (λ { (i = i0) → (A , e)
-                                   ; (i = i1) → (B , idEquiv B) })
+ua {B = B} e i = Glue B (ua-system e i)
 
 uaIdEquiv : {A : Type ℓ} → ua (idEquiv A) ≡ refl
 uaIdEquiv {A = A} i j = Glue A {φ = i ∨ ~ j ∨ j} (λ _ → A , idEquiv A)
@@ -137,6 +141,21 @@ unglueEquiv : ∀ (A : Type ℓ) (φ : I)
               (Glue A f) ≃ A
 unglueEquiv A φ f = ( unglue φ , unglueIsEquiv A φ f )
 
+-- ua-unglue is an equivalence: it's unglue over the ua-system.
+isEquiv-ua-unglue : ∀ {A B : Type ℓ} (e : A ≃ B) → ∀ φ → isEquiv (ua-unglue e φ)
+isEquiv-ua-unglue {B = B} e φ = unglueIsEquiv B (φ ∨ ~ φ) (ua-system e φ)
+
+uaUnglueEquiv : ∀ {A B : Type ℓ} (e : A ≃ B) → ∀ φ → ua e φ ≃ B
+uaUnglueEquiv e φ .fst = ua-unglue e φ
+uaUnglueEquiv e φ .snd = isEquiv-ua-unglue e φ
+
+-- An alternative proof: (ua-unglue e) reduces to equivalences whenever (φ ∨ ~ φ):
+-- (φ = i0) ⊢ ua-unglue e φ = equivFun e
+-- (φ = i1) ⊢ ua-unglue e φ = idfun B
+--
+-- This is used in the proof of [uaCompEquivSquare] below.
+uaUnglueEquiv′ : ∀ {A B : Type ℓ} (e : A ≃ B) → ∀ φ → ua e φ ≃ B
+uaUnglueEquiv′ e = lineEquiv (ua-unglue e) (equivIsEquiv e) (idIsEquiv _)
 
 -- The following is a formulation of univalence proposed by Martín Escardó:
 -- https://groups.google.com/forum/#!msg/homotopytypetheory/HfCB_b-PNEU/Ibb48LvUMeUJ
