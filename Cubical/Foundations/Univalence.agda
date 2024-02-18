@@ -351,12 +351,68 @@ elimIso {ℓ} {ℓ'} {B} Q h {A} f g sfg rfg = rem1 f g sfg rfg
   rem1 f g sfg rfg = elimEquivFun P rem (f , isoToIsEquiv (iso f g sfg rfg)) g sfg rfg
 
 
-uaInvEquiv : ∀ {A B : Type ℓ} → (e : A ≃ B) → ua (invEquiv e) ≡ sym (ua e)
-uaInvEquiv {B = B} = EquivJ (λ _ e → ua (invEquiv e) ≡ sym (ua e))
-                            (cong ua (invEquivIdEquiv B))
+uaCompUnglueEquiv : {A B C : Type ℓ} (f : A ≃ B) (g : B ≃ C) → ∀ φ → ua f φ ≃ C
+uaCompUnglueEquiv {C} f g = lineEquiv (λ φ x → equivFun g (ua-unglue f φ x)) (equivIsEquiv (f ∙ₑ g)) (equivIsEquiv g)
 
-uaCompEquiv : ∀ {A B C : Type ℓ} → (e : A ≃ B) (f : B ≃ C) → ua (compEquiv e f) ≡ ua e ∙ ua f
-uaCompEquiv {B = B} {C} = EquivJ (λ _ e → (f : B ≃ C) → ua (compEquiv e f) ≡ ua e ∙ ua f)
-                                 (λ f → cong ua (compEquivIdEquiv f)
-                                        ∙ sym (cong (λ x → x ∙ ua f) uaIdEquiv
-                                        ∙ sym (lUnit (ua f))))
+-- [ua] maps inverses of equivalences to inverses of paths.
+--
+-- To show this, we glue together four families of equivalences over B such that
+--  (1): (i = i0) ⊢ Glue B system = ua e⁻¹
+--  (2): (i = i1) ⊢ Glue B system = sym (ua e)
+--  (3): (j = i0) ⊢ Glue B system = B
+--  (4): (j = i1) ⊢ Glue B system = A
+--
+--         A ═════════════ A
+--         │ ╲    (4)    ╱ │
+--         │   B ═════ B   │
+--  ua e⁻¹ │(1)∥       ∥(2)│ sym (ua e)
+--         │   B ═════ B   │
+--         │ ╱    (3)    ╲ │
+--  j      B ═════════════ B
+--  ↑
+--  · → i
+uaInvEquiv : ∀ {A B : Type ℓ} → (e : A ≃ B) → ua (invEquiv e) ≡ sym (ua e)
+uaInvEquiv {A = A} {B = B} e i j = Glue B {φ} system where
+  φ = i ∨ ~ i ∨ j ∨ ~ j
+
+  system : Partial φ (Σ[ T ∈ Type _ ] T ≃ B)
+  system (i = i0) {-(1)-} = ua (invEquiv e) j , uaCompUnglueEquiv (invEquiv e) e j
+  system (i = i1) {-(2)-} = ua e (~ j) , uaUnglueEquiv′ e (~ j)
+  system (j = i0) {-(3)-} = B , secEquiv e i
+  system (j = i1) {-(4)-} = A , e
+
+-- [ua] commutes with composition of equivalences.
+--
+-- Like for [uaInvEquiv], we proceed by glueing, this time over C:
+--  (1): (i = i0) ⊢ Glue B system = ua f
+--  (2): (i = i1) ⊢ Glue B system = (ua f ∙ₑ g)
+--  (3): (j = i0) ⊢ Glue B system = id A
+--  (4): (j = i1) ⊢ Glue B system = ua g
+--
+--              ua g
+--        B ───────────── C
+--        │ ╲     4     ╱ │
+--        │   C ═════ C   │
+--   ua f │ 1 ∥       ∥ 2 │ ua (f ∙ₑ g)
+--        │   C ═════ C   │
+--        │ ╱     3     ╲ │
+-- j      A ═════════════ A
+-- ↑            id A
+-- · → i
+uaCompEquivSquare : ∀ {A B C : Type ℓ} → (f : A ≃ B) (g : B ≃ C) → Square (ua f) (ua (f ∙ₑ g)) (refl {x = A}) (ua g)
+uaCompEquivSquare {ℓ = ℓ} {A = A} {B = B} {C = C} f g i j = Glue C {φ} system where
+  φ = i ∨ ~ i ∨ j ∨ ~ j
+
+  system : Partial φ (Σ[ T ∈ Type ℓ ] T ≃ C)
+  system (i = i0) {-(1)-} = ua f j , uaCompUnglueEquiv f g j
+  system (i = i1) {-(2)-} = ua (f ∙ₑ g) j , uaUnglueEquiv′ (f ∙ₑ g) j
+  system (j = i0) {-(3)-} = A , f ∙ₑ g
+  system (j = i1) {-(4)-} = ua g i , uaUnglueEquiv′ g i
+
+uaCompEquiv : ∀ {A B C : Type ℓ} → (f : A ≃ B) (g : B ≃ C) → ua (compEquiv f g) ≡ ua f ∙ ua g
+uaCompEquiv {A = A} {B = B} {C = C} f g = cong fst unique-filler where
+  Filler : Type _
+  Filler = Σ[ p ∈ A ≡ C ] PathP (λ j → A ≡ ua g j) (ua f) p
+
+  unique-filler : Path Filler (ua (f ∙ₑ g) , uaCompEquivSquare f g) (ua f ∙ ua g , compPath-filler _ _)
+  unique-filler = compPath-unique (refl {x = A}) (ua f) (ua g) _ _
