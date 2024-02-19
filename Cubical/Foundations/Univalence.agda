@@ -371,6 +371,10 @@ uaCompUnglueEquiv {C} f g = lineEquiv (λ φ x → equivFun g (ua-unglue f φ x)
 --  j      B ═════════════ B
 --  ↑
 --  · → i
+--
+--  The proof (and the one for [uaCompEquivSquare] below) has been adapted from the [1lab].
+--
+--  [1lab]: https://1lab.dev/1Lab.Univalence.html
 uaInvEquiv : ∀ {A B : Type ℓ} → (e : A ≃ B) → ua (invEquiv e) ≡ sym (ua e)
 uaInvEquiv {A = A} {B = B} e i j = Glue B {φ} system where
   φ = i ∨ ~ i ∨ j ∨ ~ j
