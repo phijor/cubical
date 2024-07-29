@@ -332,13 +332,9 @@ ua→⁻ : ∀ {ℓ ℓ'} {A₀ A₁ : Type ℓ} {e : A₀ ≃ A₁} {B : (i : I
   {f₀ : A₀ → B i0} {f₁ : A₁ → B i1}
   → PathP (λ i → ua e i → B i) f₀ f₁
   → ((a : A₀) → PathP B (f₀ a) (f₁ (e .fst a)))
-ua→⁻ {e = e} {f₀ = f₀} {f₁} p a i =
-  hcomp
-    (λ k → λ
-      { (i = i0) → f₀ a
-      ; (i = i1) → f₁ (uaβ e a k)
-      })
-    (p i (transp (λ j → ua e (j ∧ i)) (~ i) a))
+ua→⁻ {e = e} p a i = p i x where
+  x : ua e i
+  x = ua-gluePt e i a
 
 ua→2 : ∀ {ℓ ℓ' ℓ''} {A₀ A₁ : Type ℓ} {e₁ : A₀ ≃ A₁}
   {B₀ B₁ : Type ℓ'} {e₂ : B₀ ≃ B₁}
