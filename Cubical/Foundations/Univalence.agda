@@ -284,16 +284,49 @@ ua→ : ∀ {ℓ ℓ'} {A₀ A₁ : Type ℓ} {e : A₀ ≃ A₁} {B : (i : I) �
   {f₀ : A₀ → B i0} {f₁ : A₁ → B i1}
   → ((a : A₀) → PathP B (f₀ a) (f₁ (e .fst a)))
   → PathP (λ i → ua e i → B i) f₀ f₁
-ua→ {e = e} {f₀ = f₀} {f₁} h i a =
-  hcomp
-    (λ j → λ
-      { (i = i0) → f₀ a
-      ; (i = i1) → f₁ (lem a j)
-      })
-    (h (transp (λ j → ua e (~ j ∧ i)) (~ i) a) i)
-  where
-  lem : ∀ a₁ → e .fst (transport (sym (ua e)) a₁) ≡ a₁
-  lem a₁ = secEq e _ ∙ transportRefl _
+ua→ {A₀ = A₀} {A₁ = A₁} {e = e} {B} {f₀ = f₀} {f₁} h i a = goal where
+  -- Construct the path from f₀ to f₁ as a heterogeneous composition
+  -- over a base given by unglueing `ua e`:
+  --
+  --     (f₀ a₀ : B i0) - - - - - - - - - - - - > (f₁ a₁ : B i1)
+  --            ^                                        ^
+  --            |                                        |
+  --    ~(h a₀) |                                        | f₁ a₁
+  --            |                                        |
+  --            |                                        |
+  -- (f₁ (e a₀) : B i1) ------------------------> (f₁ a₁ : B i1)
+  --                     (f₁ (ua-unglue e i a))
+
+  -- The partial elements `(i = i0) ⊢ (a : A₀)` and `(i = i1) ⊢ (a : A₁)`
+  -- are denoted a₀ and a₁, respectively:
+  a₀ : Partial (~ i) A₀
+  a₀ (i = i0) = a
+
+  a₁ : Partial i A₁
+  a₁ (i = i1) = a
+
+  Box : (j : I) → Type _
+  Box j = B (i ∨ ~ j)
+
+  -- We can apply f₁ to `ua-unglue e` to obtain a term in `B i1`.
+  base : Box i0
+  base = f₁ (ua-unglue e i a)
+
+  -- Observe that this computes on endpoints:
+  ∂base : Partial (i ∨ ~ i) (B i1)
+  ∂base (i = i0) = f₁ (equivFun e (a₀ 1=1))
+  ∂base (i = i1) = f₁ (a₁ 1=1)
+  _ : B i1 [ i ∨ ~ i ↦ ∂base ]
+  _ = inS base
+
+  -- The left side of the box connects `f₀ a₀` to `f₁ (e a₀)` via `h a₀`,
+  -- the right side is constantly `f₁ a₁`.
+  side : (j : I) → Partial (i ∨ ~ i) (Box j)
+  side j (i = i0) = h (a₀ 1=1) (~ j)
+  side j (i = i1) = f₁ (a₁ 1=1)
+
+  goal : Box i1
+  goal = comp Box side base
 
 ua→⁻ : ∀ {ℓ ℓ'} {A₀ A₁ : Type ℓ} {e : A₀ ≃ A₁} {B : (i : I) → Type ℓ'}
   {f₀ : A₀ → B i0} {f₁ : A₁ → B i1}
