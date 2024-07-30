@@ -316,6 +316,7 @@ ua→ {A₀ = A₀} {A₁ = A₁} {e = e} {B} {f₀ = f₀} {f₁} h i a = goal 
   ∂base : Partial (i ∨ ~ i) (B i1)
   ∂base (i = i0) = f₁ (equivFun e (a₀ 1=1))
   ∂base (i = i1) = f₁ (a₁ 1=1)
+
   _ : B i1 [ i ∨ ~ i ↦ ∂base ]
   _ = inS base
 
