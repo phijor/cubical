@@ -153,6 +153,12 @@ snd (ua-unglueEquiv e i) =
   isProp→PathP (λ i → isPropIsEquiv (ua-unglue e i))
    (snd e) (idIsEquiv _) i
 
+ua-unglueCompEquiv : {A B C : Type ℓ} (e : A ≃ B) (f : B ≃ C)
+  → PathP (λ i → ua e i ≃ C) (e ∙ₑ f) f
+ua-unglueCompEquiv {C = C} e f = equivPathP equiv-path where
+  equiv-path : PathP (λ i → ua e i → C) (equivFun (e ∙ₑ f)) (equivFun f)
+  equiv-path i = equivFun f ∘ ua-unglue e i
+
 -- The following is a formulation of univalence proposed by Martín Escardó:
 -- https://groups.google.com/forum/#!msg/homotopytypetheory/HfCB_b-PNEU/Ibb48LvUMeUJ
 -- See also Theorem 5.8.4 of the HoTT Book.
@@ -395,13 +401,30 @@ elimIso {ℓ} {ℓ'} {B} Q h {A} f g sfg rfg = rem1 f g sfg rfg
   rem1 : {A : Type ℓ} → (f : A → B) → P A f
   rem1 f g sfg rfg = elimEquivFun P rem (f , isoToIsEquiv (iso f g sfg rfg)) g sfg rfg
 
+uaInvEquiv : {A B : Type ℓ} (e : A ≃ B) → ua (invEquiv e) ≡ sym (ua e)
+uaInvEquiv {ℓ} {A} {B} e i j = Glue B {φ} system where
+  φ : I
+  φ = (i ∨ ~ i) ∨ (j ∨ ~ j)
 
-uaInvEquiv : ∀ {A B : Type ℓ} → (e : A ≃ B) → ua (invEquiv e) ≡ sym (ua e)
-uaInvEquiv {B = B} = EquivJ (λ _ e → ua (invEquiv e) ≡ sym (ua e))
-                            (cong ua (invEquivIdEquiv B))
+  system : Partial φ (Σ[ T ∈ Type ℓ ] T ≃ B)
+  system (i = i0) = ua (invEquiv e) j , ua-unglueCompEquiv (invEquiv e) e j
+  system (i = i1) = ua e (~ j) , ua-unglueEquiv e (~ j)
+  system (j = i0) = B , invEquiv-is-linv e i
+  system (j = i1) = A , e
 
-uaCompEquiv : ∀ {A B C : Type ℓ} → (e : A ≃ B) (f : B ≃ C) → ua (compEquiv e f) ≡ ua e ∙ ua f
-uaCompEquiv {B = B} {C} = EquivJ (λ _ e → (f : B ≃ C) → ua (compEquiv e f) ≡ ua e ∙ ua f)
-                                 (λ f → cong ua (compEquivIdEquiv f)
-                                        ∙ sym (cong (λ x → x ∙ ua f) uaIdEquiv
-                                        ∙ sym (lUnit (ua f))))
+uaCompEquivSquare : ∀ {A B C : Type ℓ} → (f : A ≃ B) (g : B ≃ C) → PathP (λ j → A ≡ ua g j) (ua f) (ua (f ∙ₑ g))
+uaCompEquivSquare {ℓ} {A} {B} {C} f g i j = Glue C {φ} system where
+  φ : I
+  φ = (i ∨ ~ i) ∨ (j ∨ ~ j)
+
+  system : Partial φ (Σ[ T ∈ Type ℓ ] T ≃ C)
+  system (i = i0) = ua f j , ua-unglueCompEquiv f g j
+  system (i = i1) = ua (f ∙ₑ g) j , ua-unglueEquiv (f ∙ₑ g) j
+  system (j = i0) = A , f ∙ₑ g
+  system (j = i1) = ua g i , ua-unglueEquiv g i
+
+uaCompEquiv : ∀ {A B C : Type ℓ} → (f : A ≃ B) (g : B ≃ C) → (ua f) ∙ (ua g) ≡ ua (f ∙ₑ g)
+uaCompEquiv {A = A} {B} {C} f g = transport compSquare≡compPath (uaCompEquivSquare f g) where
+  -- This is a instantiation of PathP≡compPath from `Cubical.Foundations.Path`:
+  compSquare≡compPath : PathP (λ i → A ≡ ua g i) (ua f) (ua (f ∙ₑ g)) ≡ (ua f ∙ ua g ≡ ua (f ∙ₑ g))
+  compSquare≡compPath k = PathP (λ i → A ≡ ua g (i ∨ k)) (λ j → compPath-filler (ua f) (ua g) k j) (ua (f ∙ₑ g))
