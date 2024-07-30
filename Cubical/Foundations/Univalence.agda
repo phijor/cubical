@@ -345,6 +345,22 @@ ua→2 : ∀ {ℓ ℓ' ℓ''} {A₀ A₁ : Type ℓ} {e₁ : A₀ ≃ A₁}
   → PathP (λ i → ua e₁ i → ua e₂ i → C i) f₀ f₁
 ua→2 h = ua→ (ua→ ∘ h)
 
+-- Lemmas for constructing and destructing dependent paths in a function type
+-- where both the domain and codomain are ua.
+module _
+  {ℓ ℓ'} {A₀ A₁ : Type ℓ} {B₀ B₁ : Type ℓ'}
+  {α : A₀ ≃ A₁}
+  {β : B₀ ≃ B₁}
+  {f₀ : A₀ → B₀} {f₁ : A₁ → B₁}
+  where
+  ua→ua : ((a₀ : A₀) → equivFun β (f₀ a₀) ≡ f₁ (equivFun α a₀))
+    → PathP (λ i → ua α i → ua β i) f₀ f₁
+  ua→ua comm = ua→ λ a₀ → ua-gluePath β (comm a₀)
+
+  ua→ua⁻ : PathP (λ i → ua α i → ua β i) f₀ f₁
+    → (a₀ : A₀) → equivFun β (f₀ a₀) ≡ f₁ (equivFun α a₀)
+  ua→ua⁻ p a₀ = ua-ungluePath β (ua→⁻ p a₀)
+
 -- Useful lemma for unfolding a transported function over ua
 -- If we would have regularity this would be refl
 transportUAop₁ : ∀ {A B : Type ℓ} → (e : A ≃ B) (f : A → A) (x : B)
