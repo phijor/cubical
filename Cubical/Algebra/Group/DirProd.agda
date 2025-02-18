@@ -5,7 +5,9 @@ open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.Structure
 open import Cubical.Foundations.HLevels using (isSet×)
 open import Cubical.Data.Sigma using (_×_ ; ≡-×)
+
 open import Cubical.Algebra.Group.Base using (Group ; GroupStr ; makeIsGroup)
+open import Cubical.Algebra.Group.Morphisms using (GroupHom ; IsGroupHom)
 
 DirProd : ∀ {ℓ ℓ'} → (G : Group ℓ) → (H : Group ℓ') → Group (ℓ-max ℓ ℓ')
 DirProd G H = G×H where
@@ -25,3 +27,33 @@ DirProd G H = G×H where
     (λ _ → ≡-× (G.·InvR _) (H.·InvR _))
     (λ _ → ≡-× (G.·InvL _) (H.·InvL _))
   {-# INLINE G×H #-}
+
+module DirProd {ℓ ℓ'} (G : Group ℓ) (H : Group ℓ') where
+  open IsGroupHom
+
+  fstHom : GroupHom (DirProd G H) G
+  fstHom .fst = fst
+  fstHom .snd .pres· _ _ = refl
+  fstHom .snd .pres1 = refl
+  fstHom .snd .presinv _ = refl
+
+  sndHom : GroupHom (DirProd G H) H
+  sndHom .fst = snd
+  sndHom .snd .pres· _ _ = refl
+  sndHom .snd .pres1 = refl
+  sndHom .snd .presinv _ = refl
+
+  pairingHom : {K : Group ℓ} (φ : GroupHom K G) (ψ : GroupHom K H) → GroupHom K (DirProd G H)
+  pairingHom (φ , is-hom-φ) (ψ , is-hom-ψ) = [φ,ψ] where
+    module φ = IsGroupHom is-hom-φ
+    module ψ = IsGroupHom is-hom-ψ
+
+    [φ,ψ] : GroupHom _ (DirProd G H)
+    [φ,ψ] .fst k .fst = φ k
+    [φ,ψ] .fst k .snd = ψ k
+    [φ,ψ] .snd .pres· k₁ k₂ = ≡-× (φ.pres· k₁ k₂) (ψ.pres· k₁ k₂)
+    [φ,ψ] .snd .pres1 = ≡-× (φ.pres1) (ψ.pres1)
+    [φ,ψ] .snd .presinv k = ≡-× (φ.presinv k) (ψ.presinv k)
+    {-# INLINE [φ,ψ] #-}
+
+open DirProd public using (fstHom ; sndHom ; pairingHom)
