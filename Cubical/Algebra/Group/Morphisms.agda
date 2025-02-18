@@ -23,7 +23,6 @@ open import Cubical.Foundations.Isomorphism
 open import Cubical.Foundations.Structure
 
 open import Cubical.Algebra.Group.Base
-open import Cubical.Algebra.Group.DirProd
 open import Cubical.Data.Sigma
 
 open import Cubical.Reflection.RecordEquiv
